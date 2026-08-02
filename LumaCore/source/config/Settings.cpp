@@ -204,6 +204,16 @@ namespace Settings {
                     steamstubAutoEnabled = *v;
             }
 
+            // [cloud] — CloudRedirect integration
+            if (auto cloud = tbl["cloud"].as_table()) {
+                if (auto v = (*cloud)["enabled"].value<bool>())
+                    cloudEnabled = *v;
+                if (auto v = (*cloud)["sync_achievements"].value<bool>())
+                    cloudSyncAchievements = *v;
+                if (auto v = (*cloud)["sync_playtime"].value<bool>())
+                    cloudSyncPlaytime = *v;
+            }
+
             std::string urlsLog;
             for (const auto& u : manifestFetchUrls) {
                 if (!urlsLog.empty()) urlsLog += " | ";

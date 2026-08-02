@@ -11,6 +11,7 @@
 #include "hooks/client/IpcDispatch.h"
 #include "hooks/client/IpcHooks.h"
 #include "hooks/client/DenuvoAuthenticator.h"
+#include "hooks/cloud/CloudRedirectHost.h"
 #include "patterns/PatternFetcher.h"
 #include "runtime/DirWatch.h"
 #include "runtime/Diagnostics.h"
@@ -324,6 +325,12 @@ namespace CoreInit {
             DenuvoAuth::Init();
 
             LumaCore::Attach();
+
+            // CloudRedirect: load cloud_redirect.dll (if present) and let it hook
+            // the cloud-save RPC transport for our unlocked apps. Safe no-op when
+            // [cloud].enabled is false or the DLL isn't installed.
+            CloudRedirectHost::Initialize(SteamInstallPath);
+
             g_HooksInstalled.store(true);
             HookStatus::SetStartupPhase("hooks_complete");
             HookStatus::WriteToDisk();

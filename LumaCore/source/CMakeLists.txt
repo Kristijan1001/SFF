@@ -117,6 +117,8 @@ add_library(LumaCore SHARED
     hooks/client/IpcHandlers_ISteamUtils.cpp
     hooks/client/DenuvoAuthenticator.cpp
 
+    hooks/cloud/CloudRedirectHost.cpp
+
     hooks/capture/RuntimeCapture.cpp
 
     hooks/ui/SteamUI.cpp

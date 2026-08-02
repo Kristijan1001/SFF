@@ -122,6 +122,22 @@ namespace Settings {
     // popup content in bug reports.
     inline bool diagnosticPopupEnabled = true;
 
+    // [cloud]
+    // Master switch for CloudRedirect integration. When true (and
+    // cloud_redirect.dll is present in the Steam root), LumaCore loads it,
+    // registers the addappid() library apps as redirected apps, and lets
+    // CloudRedirect hook the Steam Cloud save RPCs so unlocked games get
+    // working cloud saves. Safe no-op when the DLL isn't installed.
+    inline bool cloudEnabled = true;
+
+    // [cloud] sync_achievements / sync_playtime
+    // Opt-in cloud-backed achievement / playtime sync. Passed to
+    // CR_EnableStatsSync; actual behaviour is still gated by CloudRedirect's
+    // own user config. (Data-input wiring is a follow-up; cloud saves work
+    // regardless of these.)
+    inline bool cloudSyncAchievements = true;
+    inline bool cloudSyncPlaytime = true;
+
 
 }
 

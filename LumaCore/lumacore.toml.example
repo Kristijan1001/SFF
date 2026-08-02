@@ -65,3 +65,16 @@ diagnostic_popup = true
 # has no manual stub flag set. Set to false to disable automatic bypass
 # (manual flag override in the Lua pattern still works).
 auto_enabled = false
+
+[cloud]
+# CloudRedirect integration (Selectively11/CloudRedirect). When enabled and
+# cloud_redirect.dll is present in the Steam root, LumaCore loads it, registers
+# every addappid() library game as a redirected app, and lets CloudRedirect hook
+# Steam's Cloud save RPCs so unlocked games get working cloud saves. Safe no-op
+# if the DLL isn't installed. Cloud uploads (BeginFileUpload/CommitFileUpload)
+# require cloud_redirect >= 2.2.5 (CR_InstallVtableHooks).
+enabled = true
+# Opt-in cloud-backed achievement / playtime sync (still gated by CloudRedirect's
+# own user config).
+sync_achievements = true
+sync_playtime = true
