@@ -21,6 +21,7 @@ namespace LuaLoader {
     bool IsSteamProvidedApp(AppId_t appId);
     bool IsLuaTrackedApp(AppId_t appId);
     bool IsStatsManagedApp(AppId_t appId);
+    bool IsCloudRedirectActive(AppId_t appId);
     void MarkOwned(AppId_t appId);
     void MarkFamilyShared(AppId_t appId);
     std::vector<AppId_t> GetAllDepotIds();
