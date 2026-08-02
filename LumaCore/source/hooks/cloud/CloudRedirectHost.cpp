@@ -132,7 +132,13 @@ void Initialize(const char* steamInstallPath) {
         return;
     }
 
-    if (!p_Init(steamInstallPath, &CrNotify)) {
+    // cr_api.h requires the Steam dir WITH a trailing separator; LumaCore's
+    // SteamInstallPath has none, so append one or CR builds broken paths
+    // (e.g. "...\Steamconfig\...") and its file ops silently fail.
+    char steamRoot[MAX_PATH];
+    sprintf_s(steamRoot, MAX_PATH, "%s\\", steamInstallPath ? steamInstallPath : "");
+
+    if (!p_Init(steamRoot, &CrNotify)) {
         LOG_COREIN_ERROR("\"stage\" \"CloudRedirect\" \"err\" \"init-failed\"");
         FreeLibrary(g_dll);
         g_dll = nullptr;
