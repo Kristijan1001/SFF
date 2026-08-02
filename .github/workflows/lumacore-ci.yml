@@ -1,0 +1,26 @@
+name: LumaCore CI
+
+on:
+  push:
+    branches: [feat/cloudredirect]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Enable git long paths
+        run: git config --global core.longpaths true
+
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            LumaCore
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S LumaCore/source -B LumaCore/build -G "Ninja Multi-Config"
+
+      - name: Build (Release)
+        run: cmake --build LumaCore/build --config Release
