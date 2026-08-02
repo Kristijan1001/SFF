@@ -24,3 +24,19 @@ jobs:
 
       - name: Build (Release)
         run: cmake --build LumaCore/build --config Release
+
+      - name: Collect built DLLs
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Get-ChildItem -Path LumaCore/build -Recurse -Include *.dll,*.pdb |
+            ForEach-Object { Copy-Item $_.FullName out\ -Force }
+          Get-ChildItem out
+        shell: pwsh
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LumaCore-CloudRedirect-Release
+          path: out/**
+          if-no-files-found: error
