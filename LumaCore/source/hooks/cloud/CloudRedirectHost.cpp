@@ -11,7 +11,11 @@
 #include <windows.h>
 #include <atomic>
 #include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <iterator>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <unordered_set>
 #include <vector>
@@ -37,6 +41,8 @@ namespace {
     std::thread             g_syncThread;
     std::mutex              g_syncMtx;
     std::vector<std::uint32_t> g_lastSynced;
+    std::string             g_steamPath;                  // for re-reading loginusers.vdf
+    std::atomic<std::uint32_t> g_lastAccountId{ 0 };
 
     CR_InitCloudSave_t      p_Init          = nullptr;
     CR_SetApps_t            p_SetApps       = nullptr;
@@ -69,6 +75,52 @@ namespace {
         for (auto id : LuaLoader::GetLibraryAppIds())
             out.push_back(static_cast<std::uint32_t>(id));
         return out;
+    }
+
+    // Real logged-in account id, same value OST derives from g_localSteamId
+    // (low 32 bits of the SteamID64). We read the MostRecent user from
+    // config/loginusers.vdf instead of a memory scan, which is what fails on
+    // CR's side ("USER_OFF_ACCOUNTID: using fallback").
+    std::uint32_t ReadLoggedInAccountId(const std::string& steamPath) {
+        if (steamPath.empty()) return 0;
+        std::ifstream f(steamPath + "\\config\\loginusers.vdf");
+        if (!f) return 0;
+        std::string s((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+        std::uint64_t firstId = 0, mostRecentId = 0;
+        size_t pos = 0;
+        while (true) {
+            size_t q = s.find("\"7656119", pos);          // a "<steamid64>" block key
+            if (q == std::string::npos) break;
+            size_t e = s.find('"', q + 1);
+            if (e == std::string::npos) break;
+            std::uint64_t id = strtoull(s.substr(q + 1, e - q - 1).c_str(), nullptr, 10);
+            pos = e + 1;
+            if (firstId == 0) firstId = id;
+
+            size_t nextId  = s.find("\"7656119", pos);      // block ends at the next user
+            size_t blockEnd = (nextId == std::string::npos) ? s.size() : nextId;
+            size_t mr = s.find("\"MostRecent\"", pos);
+            if (mr != std::string::npos && mr < blockEnd) {
+                size_t v1 = s.find('"', mr + 12);           // opening quote of the value
+                size_t v2 = (v1 == std::string::npos) ? std::string::npos : s.find('"', v1 + 1);
+                if (v2 != std::string::npos && s.substr(v1 + 1, v2 - v1 - 1) == "1")
+                    mostRecentId = id;
+            }
+        }
+        std::uint64_t chosen = mostRecentId ? mostRecentId : firstId;
+        return static_cast<std::uint32_t>(chosen & 0xFFFFFFFFULL);
+    }
+
+    // Hand CloudRedirect the real account id (once known / on change) so it can
+    // namespace cloud storage + stats instead of falling back to account=0.
+    void RefreshAccountId() {
+        if (!p_SetAccountId) return;
+        std::uint32_t acc = ReadLoggedInAccountId(g_steamPath);
+        if (acc != 0 && g_lastAccountId.exchange(acc) != acc) {
+            p_SetAccountId(acc);
+            LOG_COREIN_INFO("\"stage\" \"CloudRedirect\" \"act\" \"set-account\" \"accountId\" {}", acc);
+        }
     }
 
 } // namespace
@@ -145,6 +197,11 @@ void Initialize(const char* steamInstallPath) {
         return;
     }
     g_active.store(true);
+    g_steamPath = (steamInstallPath && *steamInstallPath) ? steamInstallPath : "";
+
+    // Hand CR the real account id up front (its own scan fails -> account=0).
+    // The sync thread keeps trying in case the user logs in after init.
+    RefreshAccountId();
 
     // Stats sync is opt-in; actual behaviour is still gated by the user's own
     // CloudRedirect config. (Data input via CR_NotifyAppRunning / _StatsStored
@@ -174,6 +231,7 @@ void Initialize(const char* steamInstallPath) {
         while (!g_stopSync.load()) {
             for (int i = 0; i < 30 && !g_stopSync.load(); ++i) Sleep(100); // ~3s, stop-responsive
             if (g_stopSync.load()) break;
+            RefreshAccountId();   // catch the account id once the user logs in
             SyncAppSet();
         }
     });
