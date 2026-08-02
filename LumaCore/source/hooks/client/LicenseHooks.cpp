@@ -71,12 +71,11 @@ namespace {
 
     CloudPolicy GetCloudPolicy(AppId_t appId) {
         CloudPolicy policy{};
-        policy.block = policy.managed && !policy.owned && !policy.familyShared;
         policy.managed = LuaLoader::HasDepot(appId);
         policy.tracked = LuaLoader::IsLuaTrackedApp(appId);
         policy.owned = LuaLoader::IsOwned(appId);
         policy.familyShared = LuaLoader::IsFamilySharedApp(appId);
-        policy.block = policy.managed && !policy.owned && !policy.familyShared;
+        policy.block = policy.managed && !policy.owned && !policy.familyShared && !LuaLoader::IsCloudRedirectActive(appId);
         policy.ownershipClass = CloudOwnershipClass(policy.tracked, policy.managed,
                                                     policy.owned, policy.familyShared);
         return policy;
