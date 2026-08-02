@@ -74,6 +74,9 @@ namespace LuaLoader {
         using namespace Internal;
         return StatsAppIdSet.count(appId) > 0;
     }
+    bool IsCloudRedirectActive(AppId_t appId) {
+        return IsLuaTrackedApp(appId);
+    }
 
     int64_t GetLuaMtime(AppId_t appId) {
         using namespace Internal;
